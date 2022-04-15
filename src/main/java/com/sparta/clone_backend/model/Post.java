@@ -9,7 +9,7 @@ import javax.persistence.*;
 @NoArgsConstructor
 @Entity
 public class Post {
-
+    // 테스트
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
