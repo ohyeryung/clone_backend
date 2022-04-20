@@ -1,13 +1,12 @@
 package com.sparta.clone_backend.dto;
 
-
+import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.Setter;
 
 @Getter
-@Setter
-public class DuplicateChkDto {
+@AllArgsConstructor
+public class KakaoUserInfoDto {
+    private Long id;
     private String userName;
     private String nickName;
-
 }

@@ -1,23 +1,24 @@
 package com.sparta.clone_backend.dto;
 
-import lombok.Builder;
+import com.sparta.clone_backend.security.UserDetailsImpl;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
 @Getter
 @Setter
-@Builder
 public class UserPageResponseDto {
 
     private String nickName;
-    private List<PostsResponseDto> likeposts;
+    private List<PostListDto> likeposts;
+    private int totalpage;
 
-    public UserPageResponseDto(String nickName, List<PostsResponseDto> likeposts){
-        this.nickName = nickName;
-        this.likeposts = likeposts;
+
+    public UserPageResponseDto(UserDetailsImpl userDetails, Page<PostListDto> userPage) {
+        this.nickName = userDetails.getNickName();
+        this.likeposts = userPage.getContent();
+        this.totalpage = userPage.getTotalPages();
     }
 }
-
-
