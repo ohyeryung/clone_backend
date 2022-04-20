@@ -7,7 +7,6 @@ import com.sparta.clone_backend.dto.KakaoUserInfoDto;
 import com.sparta.clone_backend.model.User;
 import com.sparta.clone_backend.repository.UserRepository;
 import com.sparta.clone_backend.security.UserDetailsImpl;
-import com.sparta.clone_backend.security.jwt.JwtTokenUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
@@ -37,23 +36,24 @@ public class KakaoUserService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public String kakaoLogin(String code) throws JsonProcessingException {
+    public User kakaoLogin(String code) throws JsonProcessingException {
         // 1. "인가 코드"로 "액세스 토큰" 요청
-        System.out.println(code);
+        System.out.println("인가코드 = "+code);
         String accessToken = getAccessToken(code);
-
+        System.out.println("액세스 토큰 = "+accessToken);
 
         // 2. 토큰으로 카카오 API 호출
         KakaoUserInfoDto kakaoUserInfo = getKakaoUserInfo(accessToken);
-        System.out.println(kakaoUserInfo.getUserName());
-        System.out.println(kakaoUserInfo.getNickName());
-        System.out.println(kakaoUserInfo.getId());
+        System.out.println("유저 이메일(유저네임) = "+kakaoUserInfo.getUserName());
+        System.out.println("유저 닉네임 = "+kakaoUserInfo.getNickName());
+        System.out.println("유저 아이디 = "+kakaoUserInfo.getId());
         // 3. 필요시에 회원가입
         User kakaoUser = registerKakaoUserIfNeeded(kakaoUserInfo);
 
         // 4. 강제 로그인 처리
-         String token = forceLogin(kakaoUser);
-         return token;
+         forceLogin(kakaoUser);
+//        System.out.println("JWT토큰 = " + token);
+         return kakaoUser;
 
     }
 
@@ -65,8 +65,8 @@ public class KakaoUserService {
         // HTTP Body 생성
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("grant_type", "authorization_code");
-        body.add("client_id", "");
-        body.add("redirect_uri", "http://localhost:8080/user/kakao/callback");
+        body.add("client_id", "e5f5fea758008d7f18afb53531cf5e92");
+        body.add("redirect_uri", "http://3.38.117.7/user/kakao/callback");
         body.add("code", code);
 
         // HTTP 요청 보내기
@@ -89,7 +89,6 @@ public class KakaoUserService {
 
     private KakaoUserInfoDto getKakaoUserInfo(String accessToken) throws JsonProcessingException {
         // HTTP Header 생성
-        System.out.println(accessToken);
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", "Bearer " + accessToken);
         headers.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
@@ -103,20 +102,16 @@ public class KakaoUserService {
                 kakaoUserInfoRequest,
                 String.class
         );
-        System.out.println(response);
+
         String responseBody = response.getBody();
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode jsonNode = objectMapper.readTree(responseBody);
         Long id = jsonNode.get("id").asLong();
         String nickName = jsonNode.get("properties")
                 .get("nickname").asText();
+        String userName = jsonNode.get("kakao_account")
+                .get("email").asText();
 
-        System.out.println(id);
-        System.out.println(nickName);
-        String userName = "123@gmail.com";
-//                jsonNode.get("kakao_account")
-//                .get("email").asText();
-        System.out.println(userName);
 
         System.out.println("카카오 사용자 정보: " + id + ", " + userName+", "+ nickName);
         return new KakaoUserInfoDto(id, userName, nickName);
@@ -135,21 +130,18 @@ public class KakaoUserService {
             // password: random UUID
             String password = UUID.randomUUID().toString();
             String passWordEncode = passwordEncoder.encode(password);
+            String location = "서울";
 
 
-            User user = new User(userName, nickName, passWordEncode,  kakaoId);
-            userRepository.save(user);
+            kakaoUser = new User(userName, nickName, passWordEncode,location,  kakaoId);
+            userRepository.save(kakaoUser);
         }
         return kakaoUser;
     }
 
-    private String forceLogin(User kakaoUser) {
-        System.out.println(kakaoUser.getPassWord());
-        System.out.println(kakaoUser.getUserName());
+    private void forceLogin(User kakaoUser) {
         UserDetailsImpl userDetails = new UserDetailsImpl(kakaoUser);
-        System.out.println(userDetails.getUser().getPassWord());
         Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        return JwtTokenUtils.generateJwtToken(userDetails);
     }
 }

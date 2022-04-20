@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.NoSuchElementException;
 
@@ -30,13 +31,6 @@ public class PostController {
     private final PostService postService;
     private final S3Uploader S3Uploader;
 
-//    // 게시글 생성
-//    @PostMapping("/api/write")
-//    public ResponseEntity<String> createPost(@RequestBody PostRequestDto requestDto, @AuthenticationPrincipal UserDetailsImpl userDetails) {
-//        postService.createPost(requestDto, userDetails.getUser());
-//        return ResponseEntity.ok()
-//                .body("작성 완료!");
-//    }
 
     @ExceptionHandler({MissingServletRequestParameterException.class, NoSuchElementException.class, IllegalArgumentException.class})
     public ResponseEntity<StatusMessage> nullex(Exception e) {
@@ -49,8 +43,7 @@ public class PostController {
         return new ResponseEntity<>(statusMessage, httpHeaders, HttpStatus.BAD_REQUEST);
     }
 
-    // 게시글 작성 -> 토큰이 없을 경우 500에러/예외처리 필요할 것 같음 (사용자 권한 적용)
-
+    // 게시글 작성
     @PostMapping("/api/write")
     public ResponseEntity<String> upload(
             @RequestParam("postTitle") String postTitle,
@@ -70,25 +63,26 @@ public class PostController {
                 .body("201");
 }
 
-    // 전체 게시글 조회, 페이징 처리 완료
+
+    // 전체 게시글 조회, 페이징 처리 완료, 시간 변경 필요, 토큰 없이 조회 불가,,, 수정 필요
     @GetMapping("/api/posted/{pageno}")
     public PostsResponseDto showAllPost(@PathVariable("pageno") int pageno, @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        return new PostsResponseDto(postService.showAllPost(pageno - 1, userDetails));
+        return new PostsResponseDto(postService.showAllPost(pageno-1, userDetails));
     }
 
-//    특정게시글 조회
+    //특정 게시글 조회
     @GetMapping("/api/posts/{postId}")
-    public ResponseEntity<PostDetailResponseDto> getPostDetail(@PathVariable Long postId, @AuthenticationPrincipal UserDetailsImpl userDetails){
+    public ResponseEntity<PostDetailResponseDto> getPostDetail(@PathVariable Long postId){
         return ResponseEntity.status(201)
                 .header("status","201")
-                .body(postService.getPostDetail(postId, userDetails));
+                .body(postService.getPostDetail(postId));
     }
-
     // 게시글 수정
     @PutMapping("/api/posts/{postId}")
     public ResponseEntity<PostResponseDto> editPost(@PathVariable Long postId, @RequestBody PostRequestDto requestDto, @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        return new ResponseEntity<PostResponseDto>(postService.editPost(postId,requestDto, userDetails.getUser()), HttpStatus.OK);
+        return new ResponseEntity<PostResponseDto>(postService.editPost(postId, requestDto, userDetails.getUser()), HttpStatus.OK);
     }
+
 
     // 게시글 삭제
     @DeleteMapping("api/posts/{postId}")
@@ -101,10 +95,26 @@ public class PostController {
         return new ResponseEntity<>(statusMessage, httpHeaders, HttpStatus.OK);
     }
 
-//     유저정보, 장바구니 조회
+    //     유저정보, 장바구니 조회
     @GetMapping("/user/mypage/{pageno}")
     public UserPageResponseDto getUserPage(@AuthenticationPrincipal UserDetailsImpl userDetails, @PathVariable("pageno") int pageno){
         return new UserPageResponseDto(userDetails, postService.getUserPage(userDetails, pageno-1));
     }
+
+    //검색 기능
+    @GetMapping("/api/search/{keyword}/{pageno}")
+    public PostsResponseDto getSearchPostList(
+            @PathVariable(value = "keyword", required = false) String keyword, @AuthenticationPrincipal UserDetailsImpl userDetails, @PathVariable("pageno") int pageno) throws UnsupportedEncodingException {
+        return new PostsResponseDto(postService.getSearchPost(keyword, userDetails, pageno-1));
+    }
+
+    //카테고리별 조회
+    @GetMapping("/api/category/{category}/{pageno}")
+    public PostsResponseDto getCategoryPostList(
+            @PathVariable String category, @AuthenticationPrincipal UserDetailsImpl userDetails, @PathVariable("pageno") int pageno) throws UnsupportedEncodingException {
+
+        return new PostsResponseDto(postService.getCategoryPost(category, userDetails, pageno-1));
+    }
+
 
 }

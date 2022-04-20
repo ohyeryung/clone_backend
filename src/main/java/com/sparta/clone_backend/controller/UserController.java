@@ -5,7 +5,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.sparta.clone_backend.dto.DuplicateChkDto;
 import com.sparta.clone_backend.dto.IsLoginDto;
 import com.sparta.clone_backend.dto.SignupRequestDto;
+import com.sparta.clone_backend.model.User;
 import com.sparta.clone_backend.security.UserDetailsImpl;
+import com.sparta.clone_backend.security.jwt.JwtTokenUtils;
 import com.sparta.clone_backend.service.KakaoUserService;
 import com.sparta.clone_backend.service.UserService;
 import com.sparta.clone_backend.utils.StatusMessage;
@@ -27,14 +29,16 @@ public class UserController {
     private final UserService userService;
     private final KakaoUserService kakaoUserService;
 
+
     @Autowired
     public UserController(UserService userService, KakaoUserService kakaoUserService){
         this.userService = userService;
         this.kakaoUserService = kakaoUserService;
+
     }
 
 
-    //오류 처리
+    // 오류 처리
     @ExceptionHandler({PropertyValueException.class, IllegalArgumentException.class, RuntimeException.class })
     public ResponseEntity<StatusMessage> nullex(Exception e) {
         System.err.println(e.getClass());
@@ -100,12 +104,17 @@ public class UserController {
     //카카오 로그인
     @GetMapping("/user/kakao/callback")
     public ResponseEntity<String> kakaoLogin(@RequestParam String code)throws JsonProcessingException{
+        System.out.println(code);
         HttpHeaders res = new HttpHeaders();
         String msg = "카카오로그인 성공";
-        String token = kakaoUserService.kakaoLogin(code);
-        res.add("Authorization", token);
-        return ResponseEntity.ok().headers(res).body(msg);
+        User user= kakaoUserService.kakaoLogin(code);
 
+        UserDetailsImpl userDetails = new UserDetailsImpl(user);
+        String token =JwtTokenUtils.generateJwtToken(userDetails);
+        System.out.println(token);
+        res.add("Authorization", "BEARER" + " " +token);
+        System.out.println(res);
+        return ResponseEntity.ok().headers(res).body(msg);
 
     }
 }
