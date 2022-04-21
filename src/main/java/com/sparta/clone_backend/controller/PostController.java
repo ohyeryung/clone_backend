@@ -1,7 +1,10 @@
 package com.sparta.clone_backend.controller;
 
 
-import com.sparta.clone_backend.dto.*;
+import com.sparta.clone_backend.dto.PostDetailResponseDto;
+import com.sparta.clone_backend.dto.PostRequestDto;
+import com.sparta.clone_backend.dto.PostsResponseDto;
+import com.sparta.clone_backend.dto.UserPageResponseDto;
 import com.sparta.clone_backend.security.UserDetailsImpl;
 import com.sparta.clone_backend.service.PostService;
 import com.sparta.clone_backend.service.S3Uploader;
@@ -70,17 +73,38 @@ public class PostController {
         return new PostsResponseDto(postService.showAllPost(pageno-1, userDetails));
     }
 
-    //특정 게시글 조회
+
+    // 특정 게시글 조히
     @GetMapping("/api/posts/{postId}")
-    public ResponseEntity<PostDetailResponseDto> getPostDetail(@PathVariable Long postId){
+    public ResponseEntity<PostDetailResponseDto> getPostDetail(@PathVariable Long postId, @AuthenticationPrincipal UserDetailsImpl userDetails){
         return ResponseEntity.status(201)
                 .header("status","201")
-                .body(postService.getPostDetail(postId));
+                .body(postService.getPostDetail(postId, userDetails));
     }
+
     // 게시글 수정
     @PutMapping("/api/posts/{postId}")
-    public ResponseEntity<PostResponseDto> editPost(@PathVariable Long postId, @RequestBody PostRequestDto requestDto, @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        return new ResponseEntity<PostResponseDto>(postService.editPost(postId, requestDto, userDetails.getUser()), HttpStatus.OK);
+    public ResponseEntity<String> editPost(@PathVariable Long postId,
+                                                    @RequestParam(value = "postTitle",required = false) String postTitle,
+                                                    @RequestParam(value = "postContents",required = false) String postContents,
+                                                    @RequestParam(value = "imageUrl", required = false) MultipartFile multipartFile,
+                                                    @RequestParam(value = "price", required = false) int price,
+                                                    @RequestParam(value = "category",required = false) String category,
+                                                    @AuthenticationPrincipal UserDetailsImpl userDetails)
+    throws IOException{
+        System.out.println(multipartFile);
+        if(multipartFile.isEmpty()){
+            System.out.println("postcontroller 게시글 제목" + postTitle);
+            PostRequestDto postRequestDto = new PostRequestDto(postTitle, postContents,  price, category);
+            postService.editPost(postId,postRequestDto, userDetails.getUser());
+        }else{
+            String imageUrl = S3Uploader.updateImage(multipartFile, "static", postId);
+            System.out.println("postcontroller 이미지Url : "+imageUrl);
+            PostRequestDto postRequestDto = new PostRequestDto(postTitle, postContents, imageUrl, price, category);
+            postService.editPost(postId,postRequestDto, userDetails.getUser());
+        }
+
+        return new ResponseEntity<String>(HttpStatus.OK);
     }
 
 
@@ -100,7 +124,6 @@ public class PostController {
     public UserPageResponseDto getUserPage(@AuthenticationPrincipal UserDetailsImpl userDetails, @PathVariable("pageno") int pageno){
         return new UserPageResponseDto(userDetails, postService.getUserPage(userDetails, pageno-1));
     }
-
     //검색 기능
     @GetMapping("/api/search/{keyword}/{pageno}")
     public PostsResponseDto getSearchPostList(
@@ -115,6 +138,5 @@ public class PostController {
 
         return new PostsResponseDto(postService.getCategoryPost(category, userDetails, pageno-1));
     }
-
 
 }

@@ -118,7 +118,8 @@ public class PostService {
     }
 
     //상세 게시글 조회
-    public PostDetailResponseDto getPostDetail(Long postId) {
+    public PostDetailResponseDto getPostDetail(Long postId, UserDetailsImpl userDetails) {
+        String username = userDetails.getUsername();
         Post post = postRepository.findById(postId).get();
 
         return new PostDetailResponseDto(
@@ -130,7 +131,9 @@ public class PostService {
                 convertLocaldatetimeToTime(post.getCreatedAt()),
                 postLikeRepository.countByPost(post),
                 post.getNickName(),
-                post.getCategory()
+                post.getCategory(),
+                postLikeRepository.findByUserNameAndPost(username,post).isPresent()
+
         );
     }
 
@@ -169,7 +172,7 @@ public class PostService {
         Post post = postRepository.findByIdAndUserId(postId,user.getId()).orElseThrow(
                 () -> new IllegalArgumentException("작성자만 수정 가능합니다.")
         );
-        post.update(postId, requestDto.getPostContents());
+        post.update(postId, requestDto);
 
         PostResponseDto responseDto = new PostResponseDto(postId, post.getPostContents());
         return responseDto;

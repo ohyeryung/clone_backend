@@ -9,6 +9,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @Getter
 @Setter
+
 public class PostListDto {
 
     private Long postId;
@@ -49,6 +50,19 @@ public class PostListDto {
         this.category = likedPost.getCategory();
         this.like = true;
     }
-}
 
+    // 검색한 게시글만 조회
+    public PostListDto(Long postId, String postTitle, String imageUrl, int price, String location, String convertLocaldatetimeToTime, String convertLocaldatetimeToTime1, int likeCount, String category, Boolean like) {
+        this.postId = postId;
+        this.postTitle = postTitle;
+        this.imageUrl = imageUrl;
+        this.price = price;
+        this.location = location;
+        this.createdAt = convertLocaldatetimeToTime;
+        this.modifiedAt = convertLocaldatetimeToTime1;
+        this.likeCount = likeCount;
+        this.category = category;
+        this.like = like;
+    }
+}
 

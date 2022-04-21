@@ -11,10 +11,11 @@ import java.util.List;
 public class PostsResponseDto {
     private List<PostListDto> postList;
     private int totalPage;
+//    private Long totalElements;
 
-    // 전체 페이지 조회 시 페이징 처리
     public PostsResponseDto(Page<PostListDto> showAllPost) {
         this.postList = showAllPost.getContent();
         this.totalPage = showAllPost.getTotalPages();
+//        this.totalElements = showAllPost.getTotalElements();
     }
 }

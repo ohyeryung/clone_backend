@@ -28,7 +28,8 @@ public class PostDetailResponseDto {
             String createdAt,
             int likeCount,
             String nickName,
-            String category, boolean like) {
+            String category,
+            boolean like) {
 
         this.postTitle = postTitle;
         this.postContents = postContents;
